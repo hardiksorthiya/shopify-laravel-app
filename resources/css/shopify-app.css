@@ -1,0 +1,175 @@
+.set-price-page,
+.dashboard-page {
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% -10%, rgba(249, 201, 119, 0.18), transparent 35%),
+    radial-gradient(circle at 100% 0%, rgba(124, 141, 173, 0.12), transparent 32%),
+    linear-gradient(180deg, #f8fafd 0%, #eef2f7 100%);
+}
+
+.set-price-hero {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: #31200a;
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.08) 45%, transparent 60%),
+    linear-gradient(94deg, #7a4c13 0%, #b9822f 32%, #efcb83 58%, #a56f25 100%);
+  border: 1px solid rgba(122, 76, 19, 0.32);
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 8px 28px rgba(98, 60, 14, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.set-price-hero__icon {
+  height: 56px;
+  width: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #f8f6f2;
+  background: linear-gradient(165deg, #2f1f0b, #9a6d2b 62%, #bf8a39);
+  border: 1px solid rgba(255, 223, 161, 0.35);
+  box-shadow: 0 10px 18px rgba(33, 22, 8, 0.28);
+}
+
+.set-price-hero__title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.set-price-hero__subtitle {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: rgba(41, 27, 8, 0.86);
+}
+
+.set-price-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px 8px;
+}
+
+.set-price-content {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.set-price-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.set-price-form {
+  display: grid;
+  gap: 0;
+}
+
+.set-price-section {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow:
+    0 16px 34px rgba(15, 23, 42, 0.08),
+    0 4px 10px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(2px);
+}
+
+.metal-card {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.metal-card--gold {
+  border-color: #d8b164;
+  border-left: 4px solid #b0802f;
+  background:
+    linear-gradient(130deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.05) 48%, transparent 60%),
+    linear-gradient(140deg, #fff9e9 0%, #f7e7bc 48%, #f0d48b 100%);
+}
+
+.metal-card--silver {
+  border-color: #aeb7c5;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.05) 48%, transparent 60%),
+    linear-gradient(120deg, #9da8b6 0%, #d2dae5 45%, #b8c2d0 100%);
+}
+
+.metal-card--platinum {
+  border-color: #8d93a1;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04) 48%, transparent 60%),
+    linear-gradient(120deg, #7f8794 0%, #bcc3cf 45%, #979eac 100%);
+}
+
+.diamond-row-card {
+  padding: 14px;
+  border: 1px solid #dfe7f3;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.save-price-btn .Polaris-Button--variantPrimary {
+  min-width: 220px;
+  min-height: 42px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  background: linear-gradient(110deg, #7f5012, #ba812b 52%, #d8ac64);
+  border-color: #6f430d;
+  box-shadow: 0 8px 14px rgba(111, 67, 13, 0.28);
+}
+
+.save-price-btn .Polaris-Button--variantPrimary:hover {
+  background: linear-gradient(110deg, #75480f, #ad7623 52%, #c99c55);
+}
+
+.set-price-loading {
+  padding: 24px;
+  font-size: 15px;
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .set-price-hero {
+    padding: 14px 16px;
+    gap: 12px;
+    border-radius: 0;
+  }
+
+  .set-price-hero__title {
+    font-size: 26px;
+  }
+
+  .set-price-hero__subtitle {
+    font-size: 15px;
+  }
+
+  .set-price-header {
+    padding: 16px 16px 8px;
+  }
+
+  .set-price-subtitle {
+    font-size: 14px;
+  }
+
+  .set-price-content {
+    padding: 0 4px;
+  }
+}
