@@ -240,7 +240,7 @@ export default function ProductPrice() {
   };
 
   const buildExcelCsvHeader = () =>
-    "productId,sku,productName,attribute,metalType,goldKarat,diamondQuality,diamondColor,metalWeight,diamondCaratWeight,makingCharge,price";
+    "productId,sku,productName,attribute,metalType,goldKarat,diamondQuality,diamondColor,metalWeight,diamondCaratWeight,makingCharge";
 
   const handleExportCsv = () => {
     if (!products.length) return;
@@ -265,7 +265,6 @@ export default function ProductPrice() {
           saved.metal_weight ?? 0,
           saved.diamond_weight ?? 0,
           saved.making_charge ?? 0,
-          variant.price ?? 0,
         ];
 
         lines.push(row.map(escapeCsv).join(","));
@@ -289,7 +288,6 @@ export default function ProductPrice() {
       "12.3",
       "1.2",
       "1000",
-      "0",
     ];
     lines.push(sample.map(escapeCsv).join(","));
     const csvText = `${lines.join("\n")}\n`;
@@ -636,7 +634,6 @@ export default function ProductPrice() {
                 row.metal_weight ?? "",
                 row.diamond_weight ?? "",
                 row.making_charge ?? "",
-                row.price ?? "",
                 row.error || "",
               ]
                 .map(escapeCsv)
