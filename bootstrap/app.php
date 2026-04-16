@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => '/');
         $middleware->validateCsrfTokens(except: [
             'api/price-settings',
+            'api/product-variant-price',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

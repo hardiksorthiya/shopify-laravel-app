@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,15 +12,18 @@
     <meta name="shopify-host" content="{{ request()->query('host') }}">
     <title>MetalBreak App</title>
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <link rel="stylesheet" href="{{ asset('css/set-price.css') }}?v={{ @filemtime(public_path('css/set-price.css')) }}">
 
     @viteReactRefresh
     @vite('resources/js/app.jsx')
 </head>
+
 <body>
     <ui-nav-menu>
-        <a href="/app" rel="home">Dashboard</a>
-        <a href="/price">Set Price</a>
+        <a href="{{ route('price.index', request()->query()) }}">Set Price</a>
+        <a href="{{ route('product.price', request()->query()) }}">Product Price</a>
     </ui-nav-menu>
     <div id="app"></div>
 </body>
+
 </html>

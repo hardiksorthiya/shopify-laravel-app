@@ -1,40 +1,48 @@
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
-import { AppProvider, Box, Card, Page, Text } from "@shopify/polaris";
+import { AppProvider, Page, Card, Text } from "@shopify/polaris";
 import enTranslations from "@shopify/polaris/locales/en.json";
-import "@shopify/polaris/build/esm/styles.css";
-import "../css/shopify-app.css";
-import PriceSet from "./pages/PriceSet";
 
-const APP_ROOT = "/";
-const ROUTES = {
-  dashboard: `${APP_ROOT}app`,
-  price: `${APP_ROOT}price`,
-};
-const API_ENDPOINTS = {
-  priceSettings: `${APP_ROOT}api/price-settings`,
-};
+import PriceSet from "./pages/PriceSet";
+import ProductPrice from "./pages/ProductPrice";
 
 function App() {
-  const pathname = useMemo(() => window.location.pathname, []);
+  const pathname = useMemo(
+    () => window.location.pathname.replace(/\/+$/, "") || "/",
+    [],
+  );
 
   return (
     <AppProvider i18n={enTranslations}>
-      {pathname === ROUTES.price ? (
-        <PriceSet apiEndpoint={API_ENDPOINTS.priceSettings} />
+      {pathname === "/price" ? (
+        <PriceSet />
+      ) : pathname === "/products" ? (
+        <ProductPrice />
       ) : (
         <div className="dashboard-page">
-          <Page title="Dashboard">
-            <div className="set-price-section">
-              <Card>
-                <Box padding="400">
-                  <Text as="p" variant="bodyMd">
-                    Welcome to MetalBreak. Use the Shopify sidebar to open Set Price.
-                  </Text>
-                </Box>
-              </Card>
+          <div className="set-price-hero">
+            <div className="set-price-hero__icon" aria-hidden="true">
+              MB
             </div>
-          </Page>
+            <div>
+              <h1 className="set-price-hero__title">MetalBreak Dashboard</h1>
+              <p className="set-price-hero__subtitle">Manage prices and products from one place</p>
+            </div>
+          </div>
+          <div className="dashboard-page-content">
+            <Page>
+              <Card>
+                <div className="dashboard-welcome-card">
+                  <Text as="h2" variant="headingMd">
+                    Welcome to MetalBreak
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Use the navigation menu to configure price sets and update product prices.
+                  </Text>
+                </div>
+              </Card>
+            </Page>
+          </div>
         </div>
       )}
     </AppProvider>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DiamondPrice;
 use App\Models\PriceSetting;
+use App\Models\VariantPriceEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -72,6 +73,151 @@ class PriceController extends Controller
         return redirect()->route('price.index')->with('success', 'Price settings updated successfully.');
     }
 
+    public function saveVariantPrice(Request $request)
+    {
+        $validated = $request->validate([
+            'variant_id' => ['required', 'integer'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'metal_type' => ['required', 'string', 'max:50'],
+            'gold_karat' => ['required', 'string', 'max:50'],
+            'metal_weight' => ['required', 'numeric', 'min:0'],
+            'diamond_quality_value' => ['nullable', 'string'],
+            'diamond_weight' => ['required', 'numeric', 'min:0'],
+            'making_charge' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $shopDomain = $request->query('shop')
+            ?: DB::table('shops')->orderBy('id')->value('shop');
+
+        $accessToken = DB::table('shops')
+            ->when($shopDomain, fn ($query) => $query->where('shop', $shopDomain))
+            ->value('access_token')
+            ?: DB::table('shops')->orderBy('id')->value('access_token');
+
+        if (!$shopDomain || !$accessToken) {
+            return response()->json([
+                'message' => 'Shop connection is missing. Please reinstall or reconnect the app.',
+            ], 422);
+        }
+
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $accessToken,
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+        ])->put("https://{$shopDomain}/admin/api/2024-01/variants/{$validated['variant_id']}.json", [
+            'variant' => [
+                'id' => $validated['variant_id'],
+                'price' => number_format((float) $validated['price'], 2, '.', ''),
+            ],
+        ]);
+
+        if (!$response->ok()) {
+            return response()->json([
+                'message' => data_get($response->json(), 'errors')
+                    ? json_encode(data_get($response->json(), 'errors'))
+                    : 'Failed to save variant price to Shopify.',
+            ], $response->status() ?: 500);
+        }
+
+        $entry = VariantPriceEntry::updateOrCreate(
+            [
+                'shop' => $shopDomain,
+                'variant_id' => $validated['variant_id'],
+            ],
+            [
+                'metal_type' => $validated['metal_type'],
+                'gold_karat' => $validated['gold_karat'],
+                'metal_weight' => (float) $validated['metal_weight'],
+                'diamond_quality_value' => $validated['diamond_quality_value'] ?? null,
+                'diamond_weight' => (float) $validated['diamond_weight'],
+                'making_charge' => (float) $validated['making_charge'],
+                'computed_total' => (float) $validated['price'],
+            ],
+        );
+
+        return response()->json([
+            'message' => 'Variant price saved successfully.',
+            'variant' => $response->json('variant'),
+            'saved_inputs' => [
+                'metal_type' => $entry->metal_type,
+                'gold_karat' => $entry->gold_karat,
+                'metal_weight' => $entry->metal_weight,
+                'diamond_quality_value' => $entry->diamond_quality_value,
+                'diamond_weight' => $entry->diamond_weight,
+                'making_charge' => $entry->making_charge,
+                'computed_total' => $entry->computed_total,
+            ],
+        ]);
+    }
+
+    public function saveVariantPriceFromCsv(Request $request)
+    {
+        $validated = $request->validate([
+            'variant_id' => ['required', 'integer'],
+            'price' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $shopDomain = $request->query('shop')
+            ?: DB::table('shops')->orderBy('id')->value('shop');
+
+        $accessToken = DB::table('shops')
+            ->when($shopDomain, fn ($query) => $query->where('shop', $shopDomain))
+            ->value('access_token')
+            ?: DB::table('shops')->orderBy('id')->value('access_token');
+
+        if (!$shopDomain || !$accessToken) {
+            return response()->json([
+                'message' => 'Shop connection is missing. Please reinstall or reconnect the app.',
+            ], 422);
+        }
+
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $accessToken,
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+        ])->put("https://{$shopDomain}/admin/api/2024-01/variants/{$validated['variant_id']}.json", [
+            'variant' => [
+                'id' => $validated['variant_id'],
+                'price' => number_format((float) $validated['price'], 2, '.', ''),
+            ],
+        ]);
+
+        if (!$response->ok()) {
+            return response()->json([
+                'message' => data_get($response->json(), 'errors')
+                    ? json_encode(data_get($response->json(), 'errors'))
+                    : 'Failed to save variant price to Shopify.',
+            ], $response->status() ?: 500);
+        }
+
+        $existing = VariantPriceEntry::query()
+            ->where('shop', $shopDomain)
+            ->where('variant_id', $validated['variant_id'])
+            ->first();
+
+        $entry = VariantPriceEntry::updateOrCreate(
+            [
+                'shop' => $shopDomain,
+                'variant_id' => $validated['variant_id'],
+            ],
+            [
+                'metal_type' => $existing?->metal_type ?? 'gold',
+                'gold_karat' => $existing?->gold_karat ?? '10kt',
+                'metal_weight' => (float) ($existing?->metal_weight ?? 0),
+                'diamond_quality_value' => $existing?->diamond_quality_value,
+                'diamond_weight' => (float) ($existing?->diamond_weight ?? 0),
+                'making_charge' => (float) ($existing?->making_charge ?? 0),
+                'computed_total' => (float) $validated['price'],
+            ],
+        );
+
+        return response()->json([
+            'message' => 'Variant price saved successfully.',
+            'variant' => $response->json('variant'),
+            'computed_total' => $entry->computed_total,
+        ]);
+    }
+
     private function persistPriceSettings(array $validated): void
     {
         PriceSetting::updateOrCreate(
@@ -114,7 +260,8 @@ class PriceController extends Controller
     private function resolveStoreCurrency(Request $request): array
     {
         $default = ['code' => 'USD', 'symbol' => '$'];
-        $shop = $request->query('shop');
+        $shop = $request->query('shop')
+            ?: DB::table('shops')->orderBy('id')->value('shop');
 
         if (!$shop) {
             return $default;
@@ -122,7 +269,8 @@ class PriceController extends Controller
 
         $accessToken = DB::table('shops')
             ->where('shop', $shop)
-            ->value('access_token');
+            ->value('access_token')
+            ?: DB::table('shops')->orderBy('id')->value('access_token');
 
         if (!$accessToken) {
             return $default;
@@ -159,6 +307,11 @@ class PriceController extends Controller
             'QAR' => 'QAR',
             default => $currencyCode,
         };
+    }
+
+    public function productPrice()
+    {
+        return view('app');
     }
 
 

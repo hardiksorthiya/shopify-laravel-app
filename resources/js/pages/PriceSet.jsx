@@ -1,16 +1,4 @@
 import React, { useEffect, useState } from "react";
-import {
-  Banner,
-  Box,
-  Card,
-  Button,
-  Divider,
-  InlineGrid,
-  InlineStack,
-  Page,
-  Text,
-  TextField,
-} from "@shopify/polaris";
 
 const getCsrfToken = () =>
   document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ?? "";
@@ -41,7 +29,7 @@ export default function PriceSet({ apiEndpoint }) {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [currencySymbol, setCurrencySymbol] = useState("$");
-  const endpointWithQuery = `${apiEndpoint}${window.location.search ?? ""}`;
+  const endpointWithQuery = `${apiEndpoint || "/api/price-settings"}${window.location.search ?? ""}`;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -190,227 +178,148 @@ export default function PriceSet({ apiEndpoint }) {
         </p>
       </div>
 
-      <Page>
-        <div className="set-price-content">
-          {success ? (
-            <Box paddingBlockEnd="400">
-              <Banner tone="success">{success}</Banner>
-            </Box>
-          ) : null}
-          {error ? (
-            <Box paddingBlockEnd="400">
-              <Banner tone="critical">{error}</Banner>
-            </Box>
-          ) : null}
+      <div className="set-price-content">
+        {success ? <div className="app-alert app-alert--success">{success}</div> : null}
+        {error ? <div className="app-alert app-alert--error">{error}</div> : null}
 
-          <form onSubmit={submitForm} className="set-price-form">
-            <div className="set-price-section">
-              <Card>
-                <Box padding="400">
-                  <Text as="h2" variant="headingMd">
-                    Metals
-                  </Text>
+        <form onSubmit={submitForm} className="set-price-form">
+          <div className="set-price-section set-panel">
+            <h2 className="section-title">Metals</h2>
 
-                  <div className="metal-card metal-card--gold">
-                    <Text as="h3" variant="headingMd">
-                      Gold
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Price per unit for each karat
-                    </Text>
-                    <Box paddingBlockStart="300">
-                      <InlineGrid gap="300" columns={{ xs: 1, md: 4 }}>
-                        <TextField
-                          label="10kt"
-                          prefix={currencySymbol}
-                          type="number"
-                          step={0.01}
-                          autoComplete="off"
-                          value={form.gold_10kt}
-                          onChange={(value) => updateField("gold_10kt", value)}
-                        />
-                        <TextField
-                          label="14kt"
-                          prefix={currencySymbol}
-                          type="number"
-                          step={0.01}
-                          autoComplete="off"
-                          value={form.gold_14kt}
-                          onChange={(value) => updateField("gold_14kt", value)}
-                        />
-                        <TextField
-                          label="18kt"
-                          prefix={currencySymbol}
-                          type="number"
-                          step={0.01}
-                          autoComplete="off"
-                          value={form.gold_18kt}
-                          onChange={(value) => updateField("gold_18kt", value)}
-                        />
-                        <TextField
-                          label="22kt"
-                          prefix={currencySymbol}
-                          type="number"
-                          step={0.01}
-                          autoComplete="off"
-                          value={form.gold_22kt}
-                          onChange={(value) => updateField("gold_22kt", value)}
-                        />
-                      </InlineGrid>
-                    </Box>
-                  </div>
-
-                  <div className="metal-card metal-card--silver">
-                    <Text as="h3" variant="headingMd">
-                      Silver
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Price per unit
-                    </Text>
-                    <Box paddingBlockStart="300">
-                      <TextField
-                        label="Silver price"
-                        labelHidden
-                        prefix={currencySymbol}
-                        type="number"
-                        step={0.01}
-                        autoComplete="off"
-                        value={form.silver_price}
-                        onChange={(value) => updateField("silver_price", value)}
-                      />
-                    </Box>
-                  </div>
-
-                  <div className="metal-card metal-card--platinum">
-                    <Text as="h3" variant="headingMd">
-                      Platinum
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Price per unit
-                    </Text>
-                    <Box paddingBlockStart="300">
-                      <TextField
-                        label="Platinum price"
-                        labelHidden
-                        prefix={currencySymbol}
-                        type="number"
-                        step={0.01}
-                        autoComplete="off"
-                        value={form.platinum_price}
-                        onChange={(value) => updateField("platinum_price", value)}
-                      />
-                    </Box>
-                  </div>
-                </Box>
-              </Card>
+            <div className="metal-card metal-card--gold">
+              <h3 className="section-subtitle">Gold</h3>
+              <div className="product-form-grid">
+                <Field
+                  label={`10kt (${currencySymbol})`}
+                  value={form.gold_10kt}
+                  onChange={(value) => updateField("gold_10kt", value)}
+                />
+                <Field
+                  label={`14kt (${currencySymbol})`}
+                  value={form.gold_14kt}
+                  onChange={(value) => updateField("gold_14kt", value)}
+                />
+                <Field
+                  label={`18kt (${currencySymbol})`}
+                  value={form.gold_18kt}
+                  onChange={(value) => updateField("gold_18kt", value)}
+                />
+                <Field
+                  label={`22kt (${currencySymbol})`}
+                  value={form.gold_22kt}
+                  onChange={(value) => updateField("gold_22kt", value)}
+                />
+              </div>
             </div>
 
-            <Box paddingBlockStart="400">
-              <div className="set-price-section">
-                <Card>
-                  <Box padding="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text as="h2" variant="headingMd">
-                        Diamond Price
-                      </Text>
-                      <Button onClick={addDiamondRow}>Add Diamond Row</Button>
-                    </InlineStack>
-
-                    <Box paddingBlockStart="300">
-                      {form.diamonds.map((diamond, index) => (
-                        <Box key={`diamond-${index}`} paddingBlockEnd="300">
-                          <div className="diamond-row-card">
-                            <InlineGrid gap="300" columns={{ xs: 1, md: 5 }}>
-                              <TextField
-                                label="Quality"
-                                autoComplete="off"
-                                value={diamond.quality ?? ""}
-                                onChange={(value) => updateDiamondField(index, "quality", value)}
-                              />
-                              <TextField
-                                label="Color"
-                                autoComplete="off"
-                                value={diamond.color ?? ""}
-                                onChange={(value) => updateDiamondField(index, "color", value)}
-                              />
-                              <TextField
-                                label="Min Range (ct)"
-                                type="number"
-                                step={0.01}
-                                autoComplete="off"
-                                value={diamond.min_ct ?? ""}
-                                onChange={(value) => updateDiamondField(index, "min_ct", value)}
-                              />
-                              <TextField
-                                label="Max Range (ct)"
-                                type="number"
-                                step={0.01}
-                                autoComplete="off"
-                                value={diamond.max_ct ?? ""}
-                                onChange={(value) => updateDiamondField(index, "max_ct", value)}
-                              />
-                              <TextField
-                                label="Price"
-                                prefix={currencySymbol}
-                                type="number"
-                                step={0.01}
-                                autoComplete="off"
-                                value={diamond.price ?? ""}
-                                onChange={(value) => updateDiamondField(index, "price", value)}
-                              />
-                            </InlineGrid>
-                            <Box paddingBlockStart="200">
-                              <Button tone="critical" onClick={() => removeDiamondRow(index)}>
-                                Remove
-                              </Button>
-                            </Box>
-                          </div>
-                          {index !== form.diamonds.length - 1 ? (
-                            <Box paddingBlockStart="300">
-                              <Divider />
-                            </Box>
-                          ) : null}
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                </Card>
+            <div className="product-form-grid">
+              <div className="metal-card metal-card--silver">
+                <h3 className="section-subtitle">Silver</h3>
+                <Field
+                  label={`Silver price (${currencySymbol})`}
+                  value={form.silver_price}
+                  onChange={(value) => updateField("silver_price", value)}
+                />
               </div>
-            </Box>
-
-            <Box paddingBlockStart="400">
-              <div className="set-price-section">
-                <Card>
-                  <Box padding="400">
-                    <Text as="h2" variant="headingMd">
-                      Tax
-                    </Text>
-                    <Box paddingBlockStart="300">
-                      <TextField
-                        label="Tax Percent (%)"
-                        suffix="%"
-                        type="number"
-                        step={0.01}
-                        autoComplete="off"
-                        value={form.tax_percent}
-                        onChange={(value) => updateField("tax_percent", value)}
-                      />
-                    </Box>
-                  </Box>
-                </Card>
+              <div className="metal-card metal-card--platinum">
+                <h3 className="section-subtitle">Platinum</h3>
+                <Field
+                  label={`Platinum price (${currencySymbol})`}
+                  value={form.platinum_price}
+                  onChange={(value) => updateField("platinum_price", value)}
+                />
               </div>
-            </Box>
+            </div>
+          </div>
 
-            <Box paddingBlockStart="400" paddingBlockEnd="400">
-              <div className="save-price-btn">
-                <Button variant="primary" submit loading={saving}>
-                  Save Price Set
-                </Button>
-              </div>
-            </Box>
-          </form>
-        </div>
-      </Page>
+          <div className="set-price-section set-panel">
+            <div className="panel-header">
+              <h2 className="section-title">Diamond Price</h2>
+              <button type="button" className="app-btn app-btn--primary" onClick={addDiamondRow}>
+                Add Diamond Row
+              </button>
+            </div>
+
+            <div className="diamond-grid">
+              {form.diamonds.map((diamond, index) => (
+                <div className="diamond-row-card" key={`diamond-${index}`}>
+                  <div className="product-form-grid">
+                    <Field
+                      label="Quality"
+                      type="text"
+                      value={diamond.quality ?? ""}
+                      onChange={(value) => updateDiamondField(index, "quality", value)}
+                    />
+                    <Field
+                      label="Color"
+                      type="text"
+                      value={diamond.color ?? ""}
+                      onChange={(value) => updateDiamondField(index, "color", value)}
+                    />
+                    <Field
+                      label="Min Range (ct)"
+                      value={diamond.min_ct ?? ""}
+                      onChange={(value) => updateDiamondField(index, "min_ct", value)}
+                    />
+                    <Field
+                      label="Max Range (ct)"
+                      value={diamond.max_ct ?? ""}
+                      onChange={(value) => updateDiamondField(index, "max_ct", value)}
+                    />
+                    <Field
+                      label={`Price (${currencySymbol})`}
+                      value={diamond.price ?? ""}
+                      onChange={(value) => updateDiamondField(index, "price", value)}
+                    />
+                  </div>
+                  <div className="diamond-row-actions">
+                    <button
+                      type="button"
+                      className="app-btn app-btn--danger"
+                      onClick={() => removeDiamondRow(index)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="set-price-section set-panel">
+            <h2 className="section-title">Tax</h2>
+            <div className="tax-field-wrap">
+              <Field
+                label="Tax Percent (%)"
+                value={form.tax_percent}
+                onChange={(value) => updateField("tax_percent", value)}
+              />
+            </div>
+          </div>
+
+          <div className="save-price-btn">
+            <button type="submit" className="app-btn app-btn--primary app-btn--lg" disabled={saving}>
+              {saving ? "Saving..." : "Save Price Set"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = "number" }) {
+  return (
+    <div className="app-field">
+      <label>{label}</label>
+      <input
+        className="app-control"
+        type={type}
+        step={type === "number" ? "0.01" : undefined}
+        autoComplete="off"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
     </div>
   );
 }
