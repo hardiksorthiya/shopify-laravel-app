@@ -58,10 +58,24 @@ Route::get('/auth', function (Request $request) {
     $authUrl = "https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}";
 
     // Shopify OAuth must happen in the top-level window, not inside the embedded iframe.
+    // Use App Bridge redirect to avoid browser cross-origin navigation restrictions.
     if ($request->query('embedded') === '1') {
-        return response(
-            '<!doctype html><html><body><script>window.top.location.href = '.json_encode($authUrl).';</script></body></html>'
-        );
+        $host = $request->query('host');
+
+        if (! $host) {
+            return redirect($authUrl);
+        }
+
+        $html = '<!doctype html><html><head><meta charset="utf-8"><script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script></head><body>'
+            . '<script>'
+            . 'const AppBridge=window["app-bridge"];'
+            . 'const createApp=AppBridge.default;'
+            . 'const Redirect=AppBridge.actions.Redirect;'
+            . 'const app=createApp({apiKey:'.json_encode($apiKey).',host:'.json_encode($host).'});'
+            . 'Redirect.create(app).dispatch(Redirect.Action.REMOTE,'.json_encode($authUrl).');'
+            . '</script></body></html>';
+
+        return response($html);
     }
 
     return redirect($authUrl);
