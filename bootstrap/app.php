@@ -14,16 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'billing.active' => \App\Http\Middleware\EnsureShopBillingIsActive::class,
         ]);
-        $middleware->append(\App\Http\Middleware\ShopifyIframe::class);
 
         $middleware->redirectGuestsTo(fn () => '/');
         $middleware->validateCsrfTokens(except: [
             'api/price-settings',
             'api/product-variant-price',
             'billing/create-charge',
-            'webhooks/customers/data_request',
-            'webhooks/customers/redact',
-            'webhooks/shop/redact',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

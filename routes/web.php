@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PriceController;
-use App\Http\Controllers\WebhookController;
-use App\Models\VariantPriceEntry;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use App\Models\VariantPriceEntry;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,16 +17,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function (Request $request) {
     $shop = $request->get('shop');
 
-    if (! $shop) {
+    if (!$shop) {
         return 'No shop provided';
     }
 
-    return redirect()->route('auth', array_filter([
-        'shop' => $shop,
-        'host' => $request->query('host'),
-        'embedded' => $request->query('embedded'),
-    ], fn ($value) => $value !== null && $value !== ''));
+    return redirect()->route('auth', ['shop' => $shop]);
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -37,49 +34,17 @@ Route::get('/auth', function (Request $request) {
 
     $shop = $request->get('shop');
 
-    if (! $shop) {
+    if (!$shop) {
         return 'No shop provided';
     }
 
-    $apiKey = config('services.shopify.api_key');
-    $redirectUri = config('services.shopify.redirect_uri');
-    $scopes = config('services.shopify.scopes');
+    $apiKey = env('SHOPIFY_API_KEY');
+    $redirectUri = env('SHOPIFY_REDIRECT_URI');
+    $scopes = env('SHOPIFY_SCOPES');
 
-    if (! $apiKey || ! $redirectUri || ! $scopes) {
-        return response()->json([
-            'error' => 'Shopify app config is missing',
-            'missing' => [
-                'SHOPIFY_API_KEY' => ! $apiKey,
-                'SHOPIFY_REDIRECT_URI' => ! $redirectUri,
-                'SHOPIFY_SCOPES' => ! $scopes,
-            ],
-        ], 500);
-    }
-    $authUrl = "https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}";
-
-    // Shopify OAuth must happen in the top-level window, not inside the embedded iframe.
-    // Use App Bridge redirect to avoid browser cross-origin navigation restrictions.
-    if ($request->query('embedded') === '1') {
-        $host = $request->query('host');
-
-        if (! $host) {
-            return redirect($authUrl);
-        }
-
-        $html = '<!doctype html><html><head><meta charset="utf-8"><script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script></head><body>'
-            . '<script>'
-            . 'const AppBridge=window["app-bridge"];'
-            . 'const createApp=AppBridge.default;'
-            . 'const Redirect=AppBridge.actions.Redirect;'
-            . 'const app=createApp({apiKey:'.json_encode($apiKey).',host:'.json_encode($host).'});'
-            . 'Redirect.create(app).dispatch(Redirect.Action.REMOTE,'.json_encode($authUrl).');'
-            . '</script></body></html>';
-
-        return response($html);
-    }
-
-    return redirect($authUrl);
+    return redirect("https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}");
 })->name('auth');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -91,19 +56,19 @@ Route::get('/auth/callback', function (Request $request) {
     $code = $request->get('code');
     $shop = $request->get('shop');
 
-    if (! $code || ! $shop) {
+    if (!$code || !$shop) {
         return 'Missing code or shop';
     }
 
     $response = Http::asForm()->post("https://{$shop}/admin/oauth/access_token", [
-        'client_id' => config('services.shopify.api_key'),
-        'client_secret' => config('services.shopify.api_secret'),
+        'client_id' => env('SHOPIFY_API_KEY'),
+        'client_secret' => env('SHOPIFY_API_SECRET'),
         'code' => $code,
     ]);
 
     $data = $response->json();
 
-    if (! isset($data['access_token'])) {
+    if (!isset($data['access_token'])) {
         return response()->json($data);
     }
 
@@ -118,6 +83,7 @@ Route::get('/auth/callback', function (Request $request) {
     ]);
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | API: Shopify Products
@@ -130,12 +96,12 @@ Route::get('/api/products', function (Request $request) {
         ->when($shopDomain, fn ($query) => $query->where('shop', $shopDomain))
         ->first();
 
-    if (! $shop) {
+    if (!$shop) {
         return response()->json(['error' => 'No shop']);
     }
 
     $response = Http::withHeaders([
-        'X-Shopify-Access-Token' => $shop->access_token,
+        'X-Shopify-Access-Token' => $shop->access_token
     ])->get("https://{$shop->shop}/admin/api/2024-01/products.json");
 
     $data = $response->json();
@@ -155,7 +121,7 @@ Route::get('/api/products', function (Request $request) {
     $variantIds = array_values(array_unique($variantIds));
 
     $entries = collect();
-    if (! empty($variantIds)) {
+    if (!empty($variantIds)) {
         $entries = VariantPriceEntry::query()
             ->where('shop', $shopDomain)
             ->whereIn('variant_id', $variantIds)
@@ -166,7 +132,7 @@ Route::get('/api/products', function (Request $request) {
     foreach ($products as $pIndex => $product) {
         foreach (($product['variants'] ?? []) as $vIndex => $variant) {
             $idKey = isset($variant['id']) ? (string) $variant['id'] : null;
-            if (! $idKey) {
+            if (!$idKey) {
                 continue;
             }
 
@@ -186,9 +152,9 @@ Route::get('/api/products', function (Request $request) {
     }
 
     $data['products'] = $products;
-
     return response()->json($data);
 })->middleware('billing.active');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -203,6 +169,7 @@ Route::post('/api/product-variant-price-csv', [PriceController::class, 'saveVari
 Route::match(['get', 'options'], '/api/storefront/variant-breakup', [PriceController::class, 'storefrontVariantBreakup'])
     ->name('storefront.variant.breakup');
 Route::match(['get', 'options'], '/apps/metalbreak/variant-breakup', [PriceController::class, 'storefrontVariantBreakup']);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -219,16 +186,3 @@ Route::get('/api/billing/plans', [BillingController::class, 'plans'])->name('bil
 Route::get('/api/dashboard-summary', [BillingController::class, 'dashboardSummary'])->name('dashboard.summary');
 Route::post('/billing/create-charge', [BillingController::class, 'createCharge'])->name('billing.create-charge');
 Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
-
-Route::post('/webhooks/customers/data_request', [WebhookController::class, 'customersDataRequest'])
-    ->name('webhooks.customers.data_request');
-Route::post('/webhooks/customers/redact', [WebhookController::class, 'customersRedact'])
-    ->name('webhooks.customers.redact');
-Route::post('/webhooks/shop/redact', [WebhookController::class, 'shopRedact'])
-    ->name('webhooks.shop.redact');
-Route::get('/webhooks/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'message' => 'Webhook service is live. Use POST for compliance webhooks.',
-    ]);
-})->name('webhooks.health');
