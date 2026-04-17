@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PriceController;
+use App\Http\Controllers\WebhookController;
 use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -186,3 +187,5 @@ Route::get('/api/billing/plans', [BillingController::class, 'plans'])->name('bil
 Route::get('/api/dashboard-summary', [BillingController::class, 'dashboardSummary'])->name('dashboard.summary');
 Route::post('/billing/create-charge', [BillingController::class, 'createCharge'])->name('billing.create-charge');
 Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
+
+Route::post('/webhooks/compliance', [WebhookController::class, 'compliance'])->name('webhooks.compliance');
