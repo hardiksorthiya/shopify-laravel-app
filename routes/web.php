@@ -40,8 +40,16 @@ Route::get('/auth', function (Request $request) {
     $apiKey = env('SHOPIFY_API_KEY');
     $redirectUri = env('SHOPIFY_REDIRECT_URI');
     $scopes = env('SHOPIFY_SCOPES');
+    $authUrl = "https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}";
 
-    return redirect("https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}");
+    // Shopify OAuth must happen in the top-level window, not inside the embedded iframe.
+    if ($request->query('embedded') === '1') {
+        return response(
+            '<!doctype html><html><body><script>window.top.location.href = '.json_encode($authUrl).';</script></body></html>'
+        );
+    }
+
+    return redirect($authUrl);
 })->name('auth');
 
 /*
