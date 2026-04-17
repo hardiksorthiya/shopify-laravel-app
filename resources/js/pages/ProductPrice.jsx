@@ -160,6 +160,7 @@ export default function ProductPrice() {
     setMessage("");
     let successCount = 0;
     let failureCount = 0;
+    let firstErrorMessage = "";
     const nextDrafts = { ...drafts };
 
     for (const [variantId, draft] of pendingEntries) {
@@ -194,6 +195,9 @@ export default function ProductPrice() {
         successCount += 1;
       } catch (error) {
         failureCount += 1;
+        if (!firstErrorMessage && error?.message) {
+          firstErrorMessage = error.message;
+        }
       }
     }
 
@@ -203,7 +207,7 @@ export default function ProductPrice() {
       setMessage(
         successCount > 0
           ? `${successCount} variant(s) saved, ${failureCount} failed.`
-          : "Failed to save changes. Please try again.",
+          : firstErrorMessage || "Failed to save changes. Please try again.",
       );
     } else {
       setMessageType("success");
