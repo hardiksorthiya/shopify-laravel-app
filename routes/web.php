@@ -194,3 +194,9 @@ Route::post('/webhooks/customers/redact', [WebhookController::class, 'customersR
     ->name('webhooks.customers.redact');
 Route::post('/webhooks/shop/redact', [WebhookController::class, 'shopRedact'])
     ->name('webhooks.shop.redact');
+Route::get('/webhooks/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'Webhook service is live. Use POST for compliance webhooks.',
+    ]);
+})->name('webhooks.health');
