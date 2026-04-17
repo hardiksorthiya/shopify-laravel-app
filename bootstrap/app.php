@@ -20,7 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/price-settings',
             'api/product-variant-price',
             'billing/create-charge',
-            'webhooks/compliance',
+            'webhooks/customers/data_request',
+            'webhooks/customers/redact',
+            'webhooks/shop/redact',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -188,4 +188,9 @@ Route::get('/api/dashboard-summary', [BillingController::class, 'dashboardSummar
 Route::post('/billing/create-charge', [BillingController::class, 'createCharge'])->name('billing.create-charge');
 Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
 
-Route::post('/webhooks/compliance', [WebhookController::class, 'compliance'])->name('webhooks.compliance');
+Route::post('/webhooks/customers/data_request', [WebhookController::class, 'customersDataRequest'])
+    ->name('webhooks.customers.data_request');
+Route::post('/webhooks/customers/redact', [WebhookController::class, 'customersRedact'])
+    ->name('webhooks.customers.redact');
+Route::post('/webhooks/shop/redact', [WebhookController::class, 'shopRedact'])
+    ->name('webhooks.shop.redact');
