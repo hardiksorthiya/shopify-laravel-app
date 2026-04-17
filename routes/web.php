@@ -21,7 +21,11 @@ Route::get('/', function (Request $request) {
         return 'No shop provided';
     }
 
-    return redirect()->route('auth', ['shop' => $shop]);
+    return redirect()->route('auth', array_filter([
+        'shop' => $shop,
+        'host' => $request->query('host'),
+        'embedded' => $request->query('embedded'),
+    ], fn ($value) => $value !== null && $value !== ''));
 });
 
 /*
