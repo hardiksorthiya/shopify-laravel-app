@@ -3,7 +3,6 @@
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PriceController;
 use App\Models\Shop;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -33,19 +32,10 @@ Route::get('/', function (Request $request) {
 */
 Route::get('/auth', function (Request $request) {
 
-    $shop = trim((string) $request->get('shop', ''));
+    $shop = $request->get('shop');
 
     if (!$shop) {
         return 'No shop provided';
-    }
-
-    // Embedded flows can pass just the store handle; normalize to myshopify domain.
-    if (!str_contains($shop, '.')) {
-        $shop .= '.myshopify.com';
-    }
-
-    if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/', $shop)) {
-        return response()->json(['error' => 'Invalid shop domain'], 422);
     }
 
     $apiKey = config('services.shopify.api_key');
@@ -63,7 +53,6 @@ Route::get('/auth', function (Request $request) {
         'client_id' => $apiKey,
         'scope' => $scopes,
         'redirect_uri' => $redirectUri,
-        'state' => tap(Str::random(32), fn ($state) => session(['shopify_oauth_state' => $state])),
     ]);
     $authUrl = "https://{$shop}/admin/oauth/authorize?{$query}";
 
@@ -88,16 +77,10 @@ Route::get('/auth', function (Request $request) {
 Route::get('/auth/callback', function (Request $request) {
 
     $code = $request->get('code');
-    $shop = trim((string) $request->get('shop', ''));
-    $state = (string) $request->get('state', '');
-    $expectedState = (string) session('shopify_oauth_state', '');
+    $shop = $request->get('shop');
 
     if (!$code || !$shop) {
         return 'Missing code or shop';
-    }
-
-    if (!$state || !$expectedState || !hash_equals($expectedState, $state)) {
-        return response()->json(['error' => 'Invalid OAuth state'], 403);
     }
 
     $response = Http::asForm()->post("https://{$shop}/admin/oauth/access_token", [
