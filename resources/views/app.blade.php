@@ -25,6 +25,7 @@
         <a href="{{ route('billing.plane', request()->query()) }}">Plane</a>
         <a href="{{ route('price.index', request()->query()) }}">Set Price</a>
         <a href="{{ route('product.price', request()->query()) }}">Product Price</a>
+        <a href="{{ route('privacy.policy') }}" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
     </ui-nav-menu>
     <div id="app"></div>
 </body>

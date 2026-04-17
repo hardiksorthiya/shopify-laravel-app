@@ -179,6 +179,7 @@ Route::match(['get', 'options'], '/apps/metalbreak/variant-breakup', [PriceContr
 Route::get('/products', [PriceController::class, 'productPrice'])->middleware('billing.active')->name('product.price');
 
 Route::get('/app', fn () => view('app'))->name('app.home');
+Route::view('/privacy-policy', 'privacy-policy')->name('privacy.policy');
 Route::get('/pricing', [BillingController::class, 'pricing'])->name('billing.pricing');
 Route::get('/plane', [BillingController::class, 'pricing'])->name('billing.plane');
 Route::get('/api/billing/plans', [BillingController::class, 'plans'])->name('billing.plans');
