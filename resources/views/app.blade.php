@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <meta name="shopify-api-key" content="{{ env('SHOPIFY_API_KEY') }}">
+    <meta name="shopify-api-key" content="{{ config('services.shopify.api_key') }}">
     <meta name="shopify-host" content="{{ request()->query('host') }}">
     <meta name="billing-create-charge-url" content="{{ route('billing.create-charge') }}">
     <meta name="app-home-url" content="{{ route('app.home') }}">
