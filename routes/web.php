@@ -37,9 +37,20 @@ Route::get('/auth', function (Request $request) {
         return 'No shop provided';
     }
 
-    $apiKey = env('SHOPIFY_API_KEY');
-    $redirectUri = env('SHOPIFY_REDIRECT_URI');
-    $scopes = env('SHOPIFY_SCOPES');
+    $apiKey = config('services.shopify.api_key');
+    $redirectUri = config('services.shopify.redirect_uri');
+    $scopes = config('services.shopify.scopes');
+
+    if (! $apiKey || ! $redirectUri || ! $scopes) {
+        return response()->json([
+            'error' => 'Shopify app config is missing',
+            'missing' => [
+                'SHOPIFY_API_KEY' => ! $apiKey,
+                'SHOPIFY_REDIRECT_URI' => ! $redirectUri,
+                'SHOPIFY_SCOPES' => ! $scopes,
+            ],
+        ], 500);
+    }
     $authUrl = "https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}";
 
     // Shopify OAuth must happen in the top-level window, not inside the embedded iframe.
@@ -67,8 +78,8 @@ Route::get('/auth/callback', function (Request $request) {
     }
 
     $response = Http::asForm()->post("https://{$shop}/admin/oauth/access_token", [
-        'client_id' => env('SHOPIFY_API_KEY'),
-        'client_secret' => env('SHOPIFY_API_SECRET'),
+        'client_id' => config('services.shopify.api_key'),
+        'client_secret' => config('services.shopify.api_secret'),
         'code' => $code,
     ]);
 
