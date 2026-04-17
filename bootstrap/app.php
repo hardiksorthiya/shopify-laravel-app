@@ -11,10 +11,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'billing.active' => \App\Http\Middleware\EnsureShopBillingIsActive::class,
+        ]);
+
         $middleware->redirectGuestsTo(fn () => '/');
         $middleware->validateCsrfTokens(except: [
             'api/price-settings',
             'api/product-variant-price',
+            'billing/create-charge',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

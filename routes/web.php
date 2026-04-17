@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PriceController;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -75,8 +77,7 @@ Route::get('/auth/callback', function (Request $request) {
         ['access_token' => $data['access_token']]
     );
 
-    // 👉 redirect to main page (Set Price)
-    return redirect()->route('price.index', [
+    return redirect()->route('app.home', [
         'shop' => $shop,
         'host' => $request->get('host'),
     ]);
@@ -88,9 +89,12 @@ Route::get('/auth/callback', function (Request $request) {
 | API: Shopify Products
 |--------------------------------------------------------------------------
 */
-Route::get('/api/products', function () {
+Route::get('/api/products', function (Request $request) {
 
-    $shop = DB::table('shops')->first();
+    $shopDomain = $request->query('shop');
+    $shop = DB::table('shops')
+        ->when($shopDomain, fn ($query) => $query->where('shop', $shopDomain))
+        ->first();
 
     if (!$shop) {
         return response()->json(['error' => 'No shop']);
@@ -149,7 +153,7 @@ Route::get('/api/products', function () {
 
     $data['products'] = $products;
     return response()->json($data);
-});
+})->middleware('billing.active');
 
 
 /*
@@ -157,11 +161,14 @@ Route::get('/api/products', function () {
 | PRICE SET PAGES
 |--------------------------------------------------------------------------
 */
-Route::get('/price', [PriceController::class, 'index'])->name('price.index');
-Route::get('/api/price-settings', [PriceController::class, 'data'])->name('price.data');
-Route::post('/api/price-settings', [PriceController::class, 'store'])->name('price.store');
-Route::post('/api/product-variant-price', [PriceController::class, 'saveVariantPrice'])->name('product.variant.price.save');
-Route::post('/api/product-variant-price-csv', [PriceController::class, 'saveVariantPriceFromCsv'])->name('product.variant.price.csv.save');
+Route::get('/price', [PriceController::class, 'index'])->middleware('billing.active')->name('price.index');
+Route::get('/api/price-settings', [PriceController::class, 'data'])->middleware('billing.active')->name('price.data');
+Route::post('/api/price-settings', [PriceController::class, 'store'])->middleware('billing.active')->name('price.store');
+Route::post('/api/product-variant-price', [PriceController::class, 'saveVariantPrice'])->middleware('billing.active')->name('product.variant.price.save');
+Route::post('/api/product-variant-price-csv', [PriceController::class, 'saveVariantPriceFromCsv'])->middleware('billing.active')->name('product.variant.price.csv.save');
+Route::match(['get', 'options'], '/api/storefront/variant-breakup', [PriceController::class, 'storefrontVariantBreakup'])
+    ->name('storefront.variant.breakup');
+Route::match(['get', 'options'], '/apps/metalbreak/variant-breakup', [PriceController::class, 'storefrontVariantBreakup']);
 
 
 /*
@@ -169,4 +176,12 @@ Route::post('/api/product-variant-price-csv', [PriceController::class, 'saveVari
 | PRODUCT PRICE PAGE
 |--------------------------------------------------------------------------
 */
-Route::get('/products', [PriceController::class, 'productPrice'])->name('product.price');
+Route::get('/products', [PriceController::class, 'productPrice'])->middleware('billing.active')->name('product.price');
+
+Route::get('/app', fn () => view('app'))->name('app.home');
+Route::get('/pricing', [BillingController::class, 'pricing'])->name('billing.pricing');
+Route::get('/plane', [BillingController::class, 'pricing'])->name('billing.plane');
+Route::get('/api/billing/plans', [BillingController::class, 'plans'])->name('billing.plans');
+Route::get('/api/dashboard-summary', [BillingController::class, 'dashboardSummary'])->name('dashboard.summary');
+Route::post('/billing/create-charge', [BillingController::class, 'createCharge'])->name('billing.create-charge');
+Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');

@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <meta name="shopify-api-key" content="{{ env('SHOPIFY_API_KEY') }}">
     <meta name="shopify-host" content="{{ request()->query('host') }}">
+    <meta name="billing-create-charge-url" content="{{ route('billing.create-charge') }}">
+    <meta name="app-home-url" content="{{ route('app.home') }}">
     <title>MetalBreak App</title>
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
     <link rel="stylesheet" href="{{ asset('css/set-price.css') }}?v={{ @filemtime(public_path('css/set-price.css')) }}">
@@ -20,6 +22,7 @@
 
 <body>
     <ui-nav-menu>
+        <a href="{{ route('billing.plane', request()->query()) }}">Plane</a>
         <a href="{{ route('price.index', request()->query()) }}">Set Price</a>
         <a href="{{ route('product.price', request()->query()) }}">Product Price</a>
     </ui-nav-menu>

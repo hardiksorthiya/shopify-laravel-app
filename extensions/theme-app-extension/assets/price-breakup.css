@@ -1,0 +1,86 @@
+/**
+ * Matches public/css/set-price.css (ProductPrice.jsx breakup section).
+ * Keep in sync when editing the embedded app breakup styles.
+ */
+
+.price-breakup-box {
+  margin-top: 16px;
+}
+
+.price-breakup-box--empty {
+  padding: 12px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+.price-breakup-box--empty p {
+  margin: 0;
+}
+
+.breakup-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  background: #f8fafc;
+  margin-bottom: 10px;
+}
+
+.breakup-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Metal / Diamond: four columns — allow horizontal scroll on narrow viewports */
+.breakup-card:not(.breakup-card--compact) .breakup-table {
+  min-width: 500px;
+}
+
+.breakup-table th,
+.breakup-table td {
+  border: 1px solid #cfd8e3;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #1e293b;
+  text-align: left;
+}
+
+.breakup-table thead th {
+  background: #eff3f8;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.breakup-subhead td {
+  font-weight: 700;
+  color: #5aaac9;
+  font-size: 26px;
+  line-height: 1.2;
+  background: #f8fafc;
+}
+
+.breakup-row-total td:first-child {
+  font-weight: 600;
+}
+
+.breakup-table__amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.breakup-card--compact .breakup-table td {
+  background: #f8fafc;
+}
+
+.breakup-card--grand .breakup-table td:first-child {
+  font-size: 29px;
+  font-weight: 700;
+}

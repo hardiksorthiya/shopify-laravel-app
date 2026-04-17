@@ -214,6 +214,84 @@ textarea,
   padding: 14px 4px;
 }
 
+.dashboard-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.dashboard-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-card h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.dashboard-card__value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dashboard-card__meta {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.dashboard-card__btn {
+  width: fit-content;
+  margin-top: 4px;
+  text-decoration: none;
+}
+
+.dashboard-card--wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.dashboard-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboard-actions .app-btn {
+  text-decoration: none;
+}
+
+.usage-track {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.usage-track__bar {
+  height: 100%;
+  background: linear-gradient(90deg, #7f5012, #d8ac64);
+}
+
 .product-list-table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -346,23 +424,79 @@ textarea,
   box-shadow: 0 0 0 3px rgba(184, 122, 37, 0.16);
 }
 
+/* Price breakup — storefront theme block mirrors these rules in extensions/theme-app-extension/assets/price-breakup.css */
 .price-breakup-box {
-  margin-top: 14px;
+  margin-top: 16px;
+}
+
+.breakup-card {
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
-  border: 1px solid #dce5f2;
-  background: #f8fbff;
-  padding: 12px 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  background: #f8fafc;
+  margin-bottom: 10px;
 }
 
-.price-breakup-box p {
-  margin: 6px 0;
-  color: #334155;
+.breakup-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.price-breakup-total {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed #c3d2e6;
+.breakup-card:not(.breakup-card--compact) .breakup-table {
+  min-width: 500px;
+}
+
+.breakup-table th,
+.breakup-table td {
+  border: 1px solid #cfd8e3;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #1e293b;
+  text-align: left;
+}
+
+.breakup-table thead th {
+  background: #eff3f8;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.breakup-subhead td {
+  font-weight: 700;
+  color: #5aaac9;
+  font-size: 26px;
+  line-height: 1.2;
+  background: #f8fafc;
+}
+
+.breakup-row-total td:first-child {
+  font-weight: 600;
+}
+
+.breakup-table__amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.breakup-card--compact .breakup-table td {
+  background: #f8fafc;
+}
+
+.breakup-card--grand .breakup-table td:first-child {
+  font-size: 29px;
+  font-weight: 700;
+}
+
+.breakup-strike {
+  margin-left: 8px;
+  color: #475569;
+  font-weight: 500;
+  text-decoration: line-through;
 }
 
 .price-breakup-actions {
@@ -555,6 +689,60 @@ textarea,
 
 .app-btn--ghost:hover {
   background: #f8fafc;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.pricing-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+  display: grid;
+  gap: 8px;
+}
+
+.pricing-card h3 {
+  margin: 0;
+  color: #1e293b;
+}
+
+.pricing-price {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pricing-price span {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.pricing-meta {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.pricing-card--active {
+  border-color: #b87a25;
+}
+
+.plan-features {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+  display: grid;
+  gap: 4px;
 }
 
 @media (max-width: 768px) {

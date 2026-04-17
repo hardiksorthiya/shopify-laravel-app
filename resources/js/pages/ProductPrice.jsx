@@ -102,7 +102,7 @@ export default function ProductPrice() {
 
   const getDisplayPrice = (value) => {
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? `${currencySymbol}${parsed.toFixed(2)}` : "-";
+    return Number.isFinite(parsed) ? `${currencySymbol} ${parsed.toFixed(2)}` : "-";
   };
 
   const updateVariantPriceInState = (variantId, newPrice, savedInputs) => {
@@ -818,7 +818,7 @@ export default function ProductPrice() {
                                               <EditForm
                                                 product={product}
                                                 variant={variant}
-                                                currencySymbol={currencySymbol}
+                                                currencySymbol={currencySymbol} 
                                                 priceSettings={priceSettings}
                                                 draft={drafts[variant.id] || normalizeVariantDraft(variant)}
                                                 onDraftChange={(nextDraft) =>
@@ -909,6 +909,10 @@ function EditForm({
   const total = subtotal + tax;
 
   const formatMoney = (value) => value.toFixed(2);
+  const [diamondQualityName = "", diamondColorName = ""] = String(diamondQuality).split("|");
+  const diamondDisplayName =
+    [diamondColorName, diamondQualityName].filter((part) => String(part || "").trim()).join(" / ") ||
+    "Diamond";
 
   useEffect(() => {
     if (Number(draft.price).toFixed(2) === Number(total).toFixed(2)) return;
@@ -1039,38 +1043,112 @@ function EditForm({
       </div>
 
       <div className="price-breakup-box">
-        <p>
-          Metal Price: <strong>{currencySymbol}{formatMoney(metalPrice)}</strong>
-        </p>
-        <p>
-          Metal Calculation: {parsedWeight} x {currencySymbol}
-          {formatMoney(metalRate)} = <strong>{currencySymbol}{formatMoney(metalPrice)}</strong>
-        </p>
-        <p>
-          Diamond Price: <strong>{currencySymbol}{formatMoney(diamondPrice)}</strong>
-        </p>
-        <p>
-          Diamond Calculation: {parsedDiamond} x {currencySymbol}
-          {formatMoney(diamondRate)} = <strong>{currencySymbol}{formatMoney(diamondPrice)}</strong>
-        </p>
-        <p>
-          Making: <strong>{currencySymbol}{formatMoney(parsedMaking)}</strong>
-        </p>
-        <p>
-          Tax ({taxPercent}%): <strong>{currencySymbol}{formatMoney(tax)}</strong>
-        </p>
-        <p>
-          Subtotal: <strong>{currencySymbol}{formatMoney(subtotal)}</strong>
-        </p>
-        <p className="price-breakup-total">
-          Calculated Total: <strong>{currencySymbol}{formatMoney(total)}</strong>
-        </p>
-        <p>
-          Current Shopify Price: <strong>{currencySymbol}{formatMoney(variantPrice)}</strong>
-        </p>
-        <div className="price-breakup-actions">
-          <small>Save using the top “Unsaved changes” bar.</small>
+        <div className="breakup-card">
+          <table className="breakup-table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Rate</th>
+                <th>Weight</th>
+                <th width="150px">Final Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="breakup-subhead">
+                <td colSpan={4}>Metal</td>
+              </tr>
+              <tr>
+                <td>{goldKarat.toUpperCase()} {metalType}</td>
+                <td>{currencySymbol} {formatMoney(metalRate)}/g</td>
+                <td>{parsedWeight} g</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(metalPrice)}</td>
+              </tr>
+              <tr className="breakup-row-total">
+                <td>Total Metal Value</td>
+                <td>-</td>
+                <td>-</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(metalPrice)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+
+        <div className="breakup-card">
+          <table className="breakup-table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Rate</th>
+                <th>Weight</th>
+                <th width="150px">Final Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="breakup-subhead">
+                <td colSpan={4}>Diamond</td>
+              </tr>
+              <tr>
+                <td>{diamondDisplayName}</td>
+                <td>{diamondRate > 0 ? `${currencySymbol} ${formatMoney(diamondRate)}/ct` : "-"}</td>
+                <td>{parsedDiamond} ct</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(diamondPrice)}</td>
+              </tr>
+              <tr className="breakup-row-total">
+                <td>Total Diamond Value</td>
+                <td>-</td>
+                <td>-</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(diamondPrice)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="breakup-card breakup-card--compact">
+          <table className="breakup-table">
+            <tbody>
+              <tr className="breakup-row-total">
+                <td>Making Charges</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(parsedMaking)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="breakup-card breakup-card--compact">
+          <table className="breakup-table">
+            <tbody>
+              <tr>
+                <td>Sub Total</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(subtotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="breakup-card breakup-card--compact">
+          <table className="breakup-table">
+            <tbody>
+              <tr>
+                <td>Tax ({taxPercent}%)</td>
+                <td className="breakup-table__amount" width="150px">{currencySymbol} {formatMoney(tax)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="breakup-card breakup-card--compact breakup-card--grand">
+          <table className="breakup-table">
+            <tbody>
+              <tr>
+                <td>Grand Total</td>
+                <td className="breakup-table__amount" width="150px">
+                  {currencySymbol} {formatMoney(total)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
       </div>
     </div>
   );

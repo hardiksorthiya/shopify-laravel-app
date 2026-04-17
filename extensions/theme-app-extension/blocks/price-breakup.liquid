@@ -1,0 +1,40 @@
+{{ 'price-breakup.css' | asset_url | stylesheet_tag }}
+
+{% if product %}
+  {% if block.settings.app_base_url == blank %}
+    {% if request.design_mode %}
+      <p class="app-price-breakup-hint" style="padding:12px;border:1px dashed #c9c9c9;border-radius:8px;">
+        Set <strong>App base URL</strong> to your app’s public URL (same as <code>application_url</code> in the Shopify app config).
+      </p>
+    {% endif %}
+  {% else %}
+    <div
+      data-app-price-breakup
+      data-app-url="{{ block.settings.app_base_url | escape }}"
+      data-shop="{{ shop.permanent_domain | escape }}"
+      data-default-variant-id="{{ product.selected_or_first_available_variant.id }}"
+      aria-live="polite"
+    ></div>
+    <script src="{{ 'price-breakup.js' | asset_url }}" defer></script>
+  {% endif %}
+{% elsif request.design_mode %}
+  <p class="app-price-breakup-hint" style="padding:12px;border:1px dashed #c9c9c9;border-radius:8px;">
+    Add this block on a <strong>product</strong> template so it can load variant price breakups.
+  </p>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Price Breakup",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "app_base_url",
+      "label": "App base URL",
+      "info": "Public URL of this Laravel app (no trailing slash). Used to load breakup data when variants change.",
+      "default": "https://handbook-eclipse-fable.ngrok-free.dev"
+    }
+  ]
+}
+{% endschema %}

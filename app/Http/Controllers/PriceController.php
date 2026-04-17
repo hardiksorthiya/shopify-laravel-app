@@ -4,13 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\DiamondPrice;
 use App\Models\PriceSetting;
+use App\Models\Shop;
 use App\Models\VariantPriceEntry;
+use App\Services\PlanLimitService;
+use App\Services\ShopifyProductBreakupMetafields;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PriceController extends Controller
 {
+    public function __construct(private readonly PlanLimitService $planLimitService) {}
+
     public function index()
     {
         return view('app');
@@ -86,7 +93,9 @@ class PriceController extends Controller
             'making_charge' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $shopDomain = $request->query('shop')
+        $shopModel = $this->resolveCurrentShop($request);
+        $shopDomain = $shopModel?->shop
+            ?: $request->query('shop')
             ?: DB::table('shops')->orderBy('id')->value('shop');
 
         $accessToken = DB::table('shops')
@@ -94,9 +103,17 @@ class PriceController extends Controller
             ->value('access_token')
             ?: DB::table('shops')->orderBy('id')->value('access_token');
 
-        if (!$shopDomain || !$accessToken) {
+        if (!$shopDomain || !$accessToken || ! $shopModel) {
             return response()->json([
                 'message' => 'Shop connection is missing. Please reinstall or reconnect the app.',
+            ], 422);
+        }
+
+        try {
+            $this->planLimitService->enforceProductLimit($shopModel);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
             ], 422);
         }
 
@@ -135,6 +152,8 @@ class PriceController extends Controller
             ],
         );
 
+        $this->syncProductBreakupMetafields($request, $shopDomain, $accessToken, (int) $validated['variant_id'], $entry);
+
         return response()->json([
             'message' => 'Variant price saved successfully.',
             'variant' => $response->json('variant'),
@@ -157,7 +176,9 @@ class PriceController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $shopDomain = $request->query('shop')
+        $shopModel = $this->resolveCurrentShop($request);
+        $shopDomain = $shopModel?->shop
+            ?: $request->query('shop')
             ?: DB::table('shops')->orderBy('id')->value('shop');
 
         $accessToken = DB::table('shops')
@@ -165,9 +186,17 @@ class PriceController extends Controller
             ->value('access_token')
             ?: DB::table('shops')->orderBy('id')->value('access_token');
 
-        if (!$shopDomain || !$accessToken) {
+        if (!$shopDomain || !$accessToken || ! $shopModel) {
             return response()->json([
                 'message' => 'Shop connection is missing. Please reinstall or reconnect the app.',
+            ], 422);
+        }
+
+        try {
+            $this->planLimitService->enforceProductLimit($shopModel);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
             ], 422);
         }
 
@@ -210,6 +239,8 @@ class PriceController extends Controller
                 'computed_total' => (float) $validated['price'],
             ],
         );
+
+        $this->syncProductBreakupMetafields($request, $shopDomain, $accessToken, (int) $validated['variant_id'], $entry);
 
         return response()->json([
             'message' => 'Variant price saved successfully.',
@@ -293,6 +324,15 @@ class PriceController extends Controller
         ];
     }
 
+    private function resolveCurrentShop(Request $request): ?Shop
+    {
+        $shopDomain = $request->query('shop') ?: $request->input('shop');
+
+        return Shop::query()
+            ->when($shopDomain, fn ($query) => $query->where('shop', $shopDomain))
+            ->first();
+    }
+
     private function currencySymbolForCode(string $currencyCode): string
     {
         return match ($currencyCode) {
@@ -312,6 +352,254 @@ class PriceController extends Controller
     public function productPrice()
     {
         return view('app');
+    }
+
+    public function storefrontVariantBreakup(Request $request)
+    {
+        if ($request->isMethod('OPTIONS')) {
+            return $this->storefrontBreakupCors(response('', 204));
+        }
+
+        $validated = $request->validate([
+            'variant_id' => ['required', 'integer'],
+            'shop' => ['nullable', 'string'],
+        ]);
+
+        $shopDomain = $validated['shop']
+            ?? $request->query('shop')
+            ?: DB::table('shops')->orderBy('id')->value('shop');
+
+        if (! $shopDomain) {
+            return $this->storefrontBreakupCors(response()->json([
+                'message' => 'Shop is missing.',
+            ], 422));
+        }
+
+        $variantId = (int) $validated['variant_id'];
+
+        $entry = VariantPriceEntry::query()
+            ->where('shop', $shopDomain)
+            ->where('variant_id', $variantId)
+            ->first();
+
+        if (! $entry) {
+            $entry = VariantPriceEntry::query()
+                ->where('variant_id', $variantId)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $entry) {
+            return $this->storefrontBreakupCors(response()->json([
+                'message' => 'No breakup found for this variant.',
+            ], 404));
+        }
+
+        $payload = $this->buildBreakupPayloadFromEntry($entry, $request, $variantId, $shopDomain);
+
+        return $this->storefrontBreakupCors(response()->json($payload));
+    }
+
+    /**
+     * Storefront JSON + variant metafield JSON (same shape).
+     *
+     * @return array<string, mixed>
+     */
+    private function buildBreakupPayloadFromEntry(VariantPriceEntry $entry, Request $request, int $variantId, string $shopDomain): array
+    {
+        $core = $this->calculateVariantBreakupCore($entry);
+        $metalValue = $core['metal_value'];
+        $diamondValue = $core['diamond_value'];
+        $metalRate = $core['metal_rate'];
+        $diamondRate = $core['diamond_rate'];
+        $metalWeight = $core['metal_weight'];
+        $diamondWeight = $core['diamond_weight'];
+        $makingCharge = $core['making_charge'];
+        $subtotal = $core['subtotal'];
+        $taxPercent = $core['tax_percent'];
+        $taxValue = $core['tax_value'];
+        $grandTotal = $core['grand_total'];
+
+        $diamondParts = array_map('trim', explode('|', (string) ($entry->diamond_quality_value ?? '')));
+        $diamondQuality = $diamondParts[0] ?? '';
+        $diamondColor = $diamondParts[1] ?? '';
+
+        $compareAtPrice = null;
+        $accessToken = DB::table('shops')
+            ->where('shop', $shopDomain)
+            ->value('access_token')
+            ?: DB::table('shops')->orderBy('id')->value('access_token');
+
+        if ($accessToken) {
+            $variantResponse = Http::withHeaders([
+                'X-Shopify-Access-Token' => $accessToken,
+                'Accept' => 'application/json',
+            ])->get("https://{$shopDomain}/admin/api/2024-01/variants/{$variantId}.json");
+
+            if ($variantResponse->ok()) {
+                $compareAt = data_get($variantResponse->json(), 'variant.compare_at_price');
+                $compareAtNumeric = is_numeric($compareAt) ? (float) $compareAt : null;
+                if ($compareAtNumeric && $compareAtNumeric > 0) {
+                    $compareAtPrice = round($compareAtNumeric, 2);
+                }
+            }
+        }
+
+        $currency = $this->resolveStoreCurrency($request);
+        $karatLabel = strtoupper(str_replace('kt', 'KT', (string) ($entry->gold_karat ?? '')));
+        $metalLabel = Str::headline((string) ($entry->metal_type ?? 'gold'));
+        $metalTitle = trim("{$karatLabel} {$metalLabel}");
+        $diamondTitle = trim($diamondColor && $diamondQuality ? "{$diamondColor} / {$diamondQuality}" : 'Diamond');
+
+        return [
+            'variant_id' => $variantId,
+            'currency_symbol' => $currency['symbol'],
+            'currency_code' => $currency['code'],
+            'metal' => [
+                'section_title' => 'Metal',
+                'title' => $metalTitle ?: 'Metal',
+                'rate' => round($metalRate, 2),
+                'weight' => round($metalWeight, 3),
+                'weight_unit' => 'g',
+                'value' => round($metalValue, 2),
+            ],
+            'diamond' => [
+                'section_title' => 'Diamond',
+                'title' => $diamondTitle,
+                'rate' => round($diamondRate, 2),
+                'weight' => round($diamondWeight, 3),
+                'weight_unit' => 'ct',
+                'value' => round($diamondValue, 2),
+            ],
+            'making_charge' => round($makingCharge, 2),
+            'subtotal' => round($subtotal, 2),
+            'tax_percent' => round($taxPercent, 2),
+            'tax_value' => round($taxValue, 2),
+            'grand_total' => $grandTotal,
+            'compare_at_price' => $compareAtPrice,
+        ];
+    }
+
+    private function storefrontBreakupCors($response)
+    {
+        return $response
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, ngrok-skip-browser-warning');
+    }
+
+    /**
+     * Shared breakup math for storefront JSON, variant JSON metafield, and product summary metafields.
+     *
+     * @return array{
+     *     metal_value: float,
+     *     diamond_value: float,
+     *     metal_rate: float,
+     *     diamond_rate: float,
+     *     metal_weight: float,
+     *     diamond_weight: float,
+     *     making_charge: float,
+     *     subtotal: float,
+     *     tax_percent: float,
+     *     tax_value: float,
+     *     grand_total: float
+     * }
+     */
+    private function calculateVariantBreakupCore(VariantPriceEntry $entry): array
+    {
+        $settings = PriceSetting::first();
+        $taxPercent = (float) ($settings->tax_percent ?? 0);
+
+        $diamondParts = array_map('trim', explode('|', (string) ($entry->diamond_quality_value ?? '')));
+        $diamondQuality = $diamondParts[0] ?? '';
+        $diamondColor = $diamondParts[1] ?? '';
+        $diamondRateFromValue = (float) ($diamondParts[4] ?? 0);
+
+        $diamondRate = $diamondRateFromValue;
+        if ($diamondRate <= 0 && $diamondQuality !== '' && $diamondColor !== '') {
+            $match = DiamondPrice::query()
+                ->where('quality', $diamondQuality)
+                ->where('color', $diamondColor)
+                ->first();
+            $diamondRate = (float) ($match->price ?? 0);
+        }
+
+        $metalRate = match ($entry->metal_type) {
+            'gold' => (float) ($settings?->{$entry->gold_karat ? "gold_{$entry->gold_karat}" : 'gold_10kt'} ?? 0),
+            'silver' => (float) ($settings->silver_price ?? 0),
+            'platinum' => (float) ($settings->platinum_price ?? 0),
+            default => 0.0,
+        };
+
+        $metalWeight = (float) $entry->metal_weight;
+        $diamondWeight = (float) $entry->diamond_weight;
+        $makingCharge = (float) $entry->making_charge;
+
+        $metalValue = $metalWeight * $metalRate;
+        $diamondValue = $diamondWeight * $diamondRate;
+        $subtotal = $metalValue + $diamondValue + $makingCharge;
+        $taxValue = ($subtotal * $taxPercent) / 100;
+        $grandTotal = round((float) $entry->computed_total, 2) > 0
+            ? round((float) $entry->computed_total, 2)
+            : round($subtotal + $taxValue, 2);
+
+        return [
+            'metal_value' => round($metalValue, 2),
+            'diamond_value' => round($diamondValue, 2),
+            'metal_rate' => round($metalRate, 2),
+            'diamond_rate' => round($diamondRate, 2),
+            'metal_weight' => round($metalWeight, 3),
+            'diamond_weight' => round($diamondWeight, 3),
+            'making_charge' => round($makingCharge, 2),
+            'subtotal' => round($subtotal, 2),
+            'tax_percent' => round($taxPercent, 2),
+            'tax_value' => round($taxValue, 2),
+            'grand_total' => $grandTotal,
+        ];
+    }
+
+    private function syncProductBreakupMetafields(
+        Request $request,
+        string $shopDomain,
+        string $accessToken,
+        int $variantId,
+        VariantPriceEntry $entry
+    ): void {
+        try {
+            $variantResponse = Http::withHeaders([
+                'X-Shopify-Access-Token' => $accessToken,
+                'Accept' => 'application/json',
+            ])->get("https://{$shopDomain}/admin/api/2024-01/variants/{$variantId}.json");
+
+            if (! $variantResponse->ok()) {
+                return;
+            }
+
+            $productId = (int) data_get($variantResponse->json(), 'variant.product_id');
+            if ($productId <= 0) {
+                return;
+            }
+
+            $core = $this->calculateVariantBreakupCore($entry);
+            $materialTotal = $core['metal_value'] + $core['diamond_value'];
+
+            $metafields = app(ShopifyProductBreakupMetafields::class);
+            $metafields->syncProductMetafields($shopDomain, $accessToken, $productId, [
+                'gold_price' => $materialTotal,
+                'making_charges' => $core['making_charge'],
+                'gst' => $core['tax_value'],
+                'total_price' => $core['grand_total'],
+            ]);
+
+            $payload = $this->buildBreakupPayloadFromEntry($entry, $request, $variantId, $shopDomain);
+            $metafields->syncVariantPriceBreakupJson($shopDomain, $accessToken, $variantId, $payload);
+        } catch (\Throwable $e) {
+            Log::warning('Product breakup metafield sync failed', [
+                'shop' => $shopDomain,
+                'variant_id' => $variantId,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
 
