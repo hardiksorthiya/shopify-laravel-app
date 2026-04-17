@@ -3,12 +3,11 @@
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\WebhookController;
-use App\Models\Shop;
+use App\Models\VariantPriceEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-use App\Models\VariantPriceEntry;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,13 +17,12 @@ use App\Models\VariantPriceEntry;
 Route::get('/', function (Request $request) {
     $shop = $request->get('shop');
 
-    if (!$shop) {
+    if (! $shop) {
         return 'No shop provided';
     }
 
     return redirect()->route('auth', ['shop' => $shop]);
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +33,7 @@ Route::get('/auth', function (Request $request) {
 
     $shop = $request->get('shop');
 
-    if (!$shop) {
+    if (! $shop) {
         return 'No shop provided';
     }
 
@@ -45,7 +43,6 @@ Route::get('/auth', function (Request $request) {
 
     return redirect("https://{$shop}/admin/oauth/authorize?client_id={$apiKey}&scope={$scopes}&redirect_uri={$redirectUri}");
 })->name('auth');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -57,7 +54,7 @@ Route::get('/auth/callback', function (Request $request) {
     $code = $request->get('code');
     $shop = $request->get('shop');
 
-    if (!$code || !$shop) {
+    if (! $code || ! $shop) {
         return 'Missing code or shop';
     }
 
@@ -69,7 +66,7 @@ Route::get('/auth/callback', function (Request $request) {
 
     $data = $response->json();
 
-    if (!isset($data['access_token'])) {
+    if (! isset($data['access_token'])) {
         return response()->json($data);
     }
 
@@ -84,7 +81,6 @@ Route::get('/auth/callback', function (Request $request) {
     ]);
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | API: Shopify Products
@@ -97,12 +93,12 @@ Route::get('/api/products', function (Request $request) {
         ->when($shopDomain, fn ($query) => $query->where('shop', $shopDomain))
         ->first();
 
-    if (!$shop) {
+    if (! $shop) {
         return response()->json(['error' => 'No shop']);
     }
 
     $response = Http::withHeaders([
-        'X-Shopify-Access-Token' => $shop->access_token
+        'X-Shopify-Access-Token' => $shop->access_token,
     ])->get("https://{$shop->shop}/admin/api/2024-01/products.json");
 
     $data = $response->json();
@@ -122,7 +118,7 @@ Route::get('/api/products', function (Request $request) {
     $variantIds = array_values(array_unique($variantIds));
 
     $entries = collect();
-    if (!empty($variantIds)) {
+    if (! empty($variantIds)) {
         $entries = VariantPriceEntry::query()
             ->where('shop', $shopDomain)
             ->whereIn('variant_id', $variantIds)
@@ -133,7 +129,7 @@ Route::get('/api/products', function (Request $request) {
     foreach ($products as $pIndex => $product) {
         foreach (($product['variants'] ?? []) as $vIndex => $variant) {
             $idKey = isset($variant['id']) ? (string) $variant['id'] : null;
-            if (!$idKey) {
+            if (! $idKey) {
                 continue;
             }
 
@@ -153,9 +149,9 @@ Route::get('/api/products', function (Request $request) {
     }
 
     $data['products'] = $products;
+
     return response()->json($data);
 })->middleware('billing.active');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -170,7 +166,6 @@ Route::post('/api/product-variant-price-csv', [PriceController::class, 'saveVari
 Route::match(['get', 'options'], '/api/storefront/variant-breakup', [PriceController::class, 'storefrontVariantBreakup'])
     ->name('storefront.variant.breakup');
 Route::match(['get', 'options'], '/apps/metalbreak/variant-breakup', [PriceController::class, 'storefrontVariantBreakup']);
-
 
 /*
 |--------------------------------------------------------------------------

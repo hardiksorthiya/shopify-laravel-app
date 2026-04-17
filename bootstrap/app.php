@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'billing.active' => \App\Http\Middleware\EnsureShopBillingIsActive::class,
         ]);
+        $middleware->append(\App\Http\Middleware\ShopifyIframe::class);
 
         $middleware->redirectGuestsTo(fn () => '/');
         $middleware->validateCsrfTokens(except: [
